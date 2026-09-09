@@ -1,14 +1,15 @@
-const User = require('../models/User');
+const User = require('./../models/user.model');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const express = require('express');
 const router = express.Router()
-const { verifyToken } = require("../middlewares/auth.middlewares")
+const { verifyToken } = require("./../middlewares/auth.middleware")
 
 router.post('/register', async (req, res, next) => {
     const { password, username } = req.body;
 
-    if (!email || !password) {
-        res.status(400).json({ message: "Missing email or password" });
+    if (!username || !password) {
+        res.status(400).json({ message: "Missing username or password" });
         return;
     }
 
@@ -34,20 +35,21 @@ router.post('/register', async (req, res, next) => {
     }
 });
 
-router.get('/login', async (req, res, next) => {
+router.post('/login', async (req, res, next) => {
 
     const { username, password } = req.body;
 
-    if (!email || !password) {
-        res.status(400).json({ message: "Missing email or password" });
+    if (!username || !password) {
+        res.status(400).json({ message: "Missing username or password" });
         return;
     }
 
     try {
-        const foundUser = User.findOne({ username });
+        const foundUser = await User.findOne({ username });
 
         if (!foundUser) {
             res.status(400).json({ message: 'Invalid credentials' })
+            return;
         }
 
         const passwordMatch = await bcrypt.compare(password, foundUser.password);
@@ -56,13 +58,11 @@ router.get('/login', async (req, res, next) => {
             return;
         }
 
-        const payload = { id: foundUser._id, email: foundUser.email };
+        const payload = { id: foundUser._id, username: foundUser.username };
 
         const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1h" });
 
         res.status(200).json({ message: "Logged in successfully", token, payload });
-
-
     } catch (err) {
         next(err);
     }
@@ -84,7 +84,7 @@ router.post("/update-password", async (req, res, next) => {
         }
 
         const user = User.findById(userId);
-        const passwordMatch = await bcrypt.compare(password, user.password);
+        const passwordMatch = await bcrypt.compare(actualPassword, user.password);
         if (!passwordMatch) {
             res.status(400).json({ message: "Password is wrong" });
             return;
