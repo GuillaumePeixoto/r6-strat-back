@@ -21,4 +21,6 @@ const bombMapLocationSchema = new mongoose.Schema({
   },
 }, { timestamps: true });
 
-module.exports = mongoose.model('BombMapLocation', bombMapLocationSchema);
+const BombMapLocation = mongoose.model('BombMapLocation', bombMapLocationSchema);
+
+module.exports = BombMapLocation;

@@ -3,6 +3,9 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const userRouter = require('./routes/user.routes');
+const mapRouter = require('./routes/map.routes');
+const agentRouter = require('./routes/agent.routes');
+const strategyRouter = require('./routes/strategy.routes');
 
 const app = express();
 
@@ -21,6 +24,9 @@ app.get('/', (req, res) => {
 });
 
 app.use('/api/auth', userRouter);
+app.use('/api', mapRouter);
+app.use('/api', agentRouter);
+app.use('/api', strategyRouter);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Serveur lancé sur le port ${PORT}`));

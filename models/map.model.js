@@ -24,4 +24,12 @@ const mapSchema = new mongoose.Schema({
   },
 }, { timestamps: true });
 
-module.exports = mongoose.model('Map', mapSchema);
+mapSchema.virtual('bombMapLocations', {
+  ref: 'BombMapLocation', // Collection to Link
+  localField: '_id', // Key
+  foreignField: 'map' // Element where the key is stored inside the linked collection
+});
+
+const Map = mongoose.model('Map', mapSchema);
+
+module.exports = Map;
