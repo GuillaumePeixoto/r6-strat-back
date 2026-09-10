@@ -24,7 +24,7 @@ router.get('/maps', verifyToken, async (req, res, next) => {
 
 })
 
-router.get('/maps/:slug', async (req, res, next) => {
+router.get('/maps/:slug', verifyToken, async (req, res, next) => {
     try {
         const includes = String(req.query.include || '')
             .split(',')
@@ -47,8 +47,6 @@ router.get('/maps/:slug', async (req, res, next) => {
             response.strategies = await Strategy.find({ map: map._id }).lean();
             response.strategiesCount = response.strategies.length;
         }
-
-        console.log('/maps/:slug', response);
 
         res.status(200).json(response);
     } catch (err) {

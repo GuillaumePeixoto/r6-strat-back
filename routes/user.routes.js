@@ -60,7 +60,7 @@ router.post('/login', async (req, res, next) => {
 
         const payload = { id: foundUser._id, username: foundUser.username };
 
-        const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1h" });
+        const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "4h" });
 
         res.status(200).json({ message: "Logged in successfully", token, payload });
     } catch (err) {
@@ -72,7 +72,7 @@ router.get("/verify", verifyToken, (req, res, next) => {
     res.status(200).json({ message: "Token is valid", payload: req.payload });
 });
 
-router.post("/update-password", async (req, res, next) => {
+router.post("/update-password", verifyToken, async (req, res, next) => {
 
     const userId = req.user.id;
     const { actualPassword, newPassword, newPasswordCopy } = req.body;

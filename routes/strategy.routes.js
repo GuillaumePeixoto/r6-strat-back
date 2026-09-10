@@ -38,6 +38,20 @@ router.get('/strategies', verifyToken, async (req, res, next) => {
 	}
 });
 
+router.get('/strategies/:id', verifyToken, async (req, res, next) => {
+	try {
+		const strategy = await Strategy.findById(req.params.id)
+			.populate('map')
+			.populate('bombSiteLocation')
+			.lean();
+
+		if (!strategy) return res.status(404).json({ errorMessage: 'STRATEGY_NOT_FOUND' });
+		res.status(200).json(strategy);
+	} catch (err) {
+		next(err);
+	}
+});
+
 router.post('/strategies/:strategyId/favorite', verifyToken, async (req, res, next) => {
 	try {
 		await StrategyUser.findOneAndUpdate(
