@@ -6,6 +6,7 @@ const userRouter = require('./routes/user.routes');
 const mapRouter = require('./routes/map.routes');
 const agentRouter = require('./routes/agent.routes');
 const strategyRouter = require('./routes/strategy.routes');
+require('./models/utility.model');
 
 const app = express();
 

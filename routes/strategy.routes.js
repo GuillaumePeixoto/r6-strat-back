@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const { verifyToken } = require('./../middlewares/auth.middleware.js');
 const Strategy = require('./../models/strategy.model.js');
-const StrategyAgent = require('./../models/strategyAgent.model.js');
 const StrategyUser = require('./../models/strategyUser.model.js');
 
 router.get('/strategies', verifyToken, async (req, res, next) => {
@@ -13,9 +12,6 @@ router.get('/strategies', verifyToken, async (req, res, next) => {
 			.lean();
 
 		const strategyIds = strategies.map((strategy) => strategy._id);
-		const links = await StrategyAgent.find({ strategy: { $in: strategyIds } })
-			.populate('agent')
-			.lean();
 		const favoriteLinks = await StrategyUser.find({
 			strategy: { $in: strategyIds },
 			user: req.payload.id,
@@ -23,12 +19,6 @@ router.get('/strategies', verifyToken, async (req, res, next) => {
 		const favoriteIds = new Set(favoriteLinks.map((link) => String(link.strategy)));
 		const agentsByStrategy = new Map();
 
-		links.forEach((link) => {
-			const key = String(link.strategy);
-			const current = agentsByStrategy.get(key) || [];
-			current.push(link.agent);
-			agentsByStrategy.set(key, current);
-		});
 
 		const selectedAgents = String(agents).split(',').filter(Boolean);
 		const filtered = strategies
@@ -68,6 +58,50 @@ router.delete('/strategies/:strategyId/favorite', verifyToken, async (req, res, 
 	} catch (err) {
 		next(err);
 	}
+});
+
+// onst url = editMode ? `api/save-strategy/${editId}` : "/save-strategy";
+router.post('/save-strategy', verifyToken, async (req, res, next) => {
+	try {
+		const { title, map_id, bombsite, walls, agents } = req.body
+		const newStrategy = await Strategy.create({
+			title,
+			infosStrategy: {
+				"walls": walls,
+				"agents": agents
+			},
+			map: map_id,
+			user: req.payload._id,
+			bombSiteLocation: bombsite
+		});
+		res.status(201).json(newStrategy);
+	} catch (err) {
+		next(err);
+	}
+});
+
+router.put('/api/strategies/:id', verifyToken, async (req, res, next) => {
+	try {
+		const { title, map_id, bombsite, walls, agents } = req.body
+		const updated = await Strategy.findByIdAndUpdate(
+			req.params.id,
+			{
+				title,
+				infosStrategy: {
+					"walls": walls,
+					"agents": agents
+				},
+				map: map_id,
+				user: req.payload._id,
+				bombSiteLocation: bombsite
+			},
+			{ new: true }
+		);
+		res.json(updated);
+	} catch (err) {
+		next(err);
+	}
+
 });
 
 module.exports = router;

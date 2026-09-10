@@ -14,6 +14,20 @@ const agentSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-}, { timestamps: true });
+  utilities: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Utility',
+  }],
+}, {
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true },
+});
+
+agentSchema.virtual('agentObject', {
+  ref: 'AgentObject',
+  localField: '_id',
+  foreignField: 'agent',
+});
 
 module.exports = mongoose.model('Agent', agentSchema);
