@@ -6,53 +6,68 @@ const User = require('./../models/user.model.js');
 const Agent = require('./../models/agent.model.js');
 
 router.get('/strategies', verifyToken, async (req, res, next) => {
-  try {
-    const { search = '', site = '', agents = '', map = '', favorites = '0' } = req.query;
+	try {
+		const query = req.query;
 
-    const [strategies, user] = await Promise.all([
-      Strategy.find({ map })
-        .populate('map', 'name slug thumbnail')
-        .populate('bombSiteLocation')
-        .lean(),
-      User.findById(req.payload.id).select('favorites').lean(),
-    ]);
+		const [strategies, user] = await Promise.all([
+			Strategy.find({ map: query.map })
+				.populate('map', 'name slug thumbnail')
+				.populate('bombSiteLocation')
+				.lean(),
+			User.findById(req.payload.id).select('favorites').lean(),
+		]);
 
-    const favoriteIds = new Set((user?.favorites || []).map((id) => String(id)));
+		const favoriteIds = new Set((user?.favorites || []).map((id) => String(id)));
 
-    const agentIds = [
-      ...new Set(
-        strategies.flatMap((s) => (s.infosStrategy.agents || []).map((a) => a.id_agent))
-      ),
-    ];
-    const agentsData = await Agent.find({ _id: { $in: agentIds } }).select('name iconAgent').lean();
-    const agentsMap = new Map(agentsData.map((a) => [String(a._id), a]));
+		const agentIds = [
+			...new Set(
+				strategies.flatMap((s) => (s.infosStrategy.agents || []).map((a) => a.id_agent))
+			),
+		];
 
-    const selectedAgents = String(agents).split(',').filter(Boolean);
+		const agentsData = await Agent.find({ _id: { $in: agentIds } }).select('name iconAgent').lean();
+		const agentsMap = new Map(agentsData.map((a) => [String(a._id), a]));
 
-    const shaped = strategies
-      .map((strategy) => ({
-        id: String(strategy._id),
-        title: strategy.title,
-        map_slug: strategy.map?.slug,
-        map_name: strategy.map?.name,
-        map_thumbnail: strategy.map?.thumbnail,
-        bombsite_name: strategy.bombSiteLocation?.zoneName, // 👈 corrigé
-        bombsite_id: strategy.bombSiteLocation?._id,
-        is_favorite_for_me: favoriteIds.has(String(strategy._id)),
-        agents: (strategy.infosStrategy.agents || [])
-          .map((a) => agentsMap.get(String(a.id_agent)))
-          .filter(Boolean)
-          .map((agent) => ({ id: String(agent._id), name: agent.name, icon: agent.iconAgent })),
-      }))
-      .filter((strategy) => !search || strategy.title.toLowerCase().includes(search.toLowerCase()))
-      .filter((strategy) => !site || String(strategy.bombsite_id) === site)
-      .filter((strategy) => !selectedAgents.length || strategy.agents.some((a) => selectedAgents.includes(a.id)))
-      .filter((strategy) => favorites !== '1' || strategy.is_favorite_for_me);
+		let selectedAgents = req.query['agents[]'] ?? [];
+		if (typeof selectedAgents == 'string') {
+			selectedAgents = [selectedAgents];
+		}
 
-    res.status(200).json(shaped);
-  } catch (err) {
-    next(err);
-  }
+		const shaped = strategies
+			.map((strategy) => ({
+				id: String(strategy._id),
+				title: strategy.title,
+				map_slug: strategy.map?.slug,
+				map_name: strategy.map?.name,
+				map_thumbnail: strategy.map?.thumbnail,
+				bombsite_name: strategy.bombSiteLocation?.zoneName, // 👈 corrigé
+				bombsite_id: strategy.bombSiteLocation?._id,
+				is_favorite_for_me: favoriteIds.has(String(strategy._id)),
+				agents: (strategy.infosStrategy.agents || [])
+					.map((a) => agentsMap.get(String(a.id_agent)))
+					.filter(Boolean)
+					.map((agent) => ({ id: String(agent._id), name: agent.name, icon: agent.iconAgent })),
+			}))
+			.filter((strategy) => !query?.search || strategy.title.toLowerCase().includes(query?.search.toLowerCase()))
+			.filter((strategy) => !query?.site || String(strategy.bombsite_id) === query?.site)
+			.filter((strategy) => !selectedAgents.length || strategy.agents.some((a) =>
+				true
+			))
+			.filter((strategy) => {
+				if(!selectedAgents.length) return true;
+
+				const strategyAgentIds = strategy.agents.map((a) => a.id);
+
+				return selectedAgents.every((id_agent) =>
+					strategyAgentIds.includes(id_agent)
+				)
+			})
+			.filter((strategy) => query?.favorites !== '1' || strategy.is_favorite_for_me);
+
+		res.status(200).json(shaped);
+	} catch (err) {
+		next(err);
+	}
 });
 
 router.get('/strategies/:id', verifyToken, async (req, res, next) => {
@@ -136,29 +151,29 @@ router.put('/strategies/:id', verifyToken, async (req, res, next) => {
 });
 
 router.patch('/favorites/:strategyId', verifyToken, async (req, res, next) => {
-  try {
-    const userId = req.payload.id; // récupéré depuis le token, comme pour changePassword
-    const { strategyId } = req.params;
+	try {
+		const userId = req.payload.id; // récupéré depuis le token, comme pour changePassword
+		const { strategyId } = req.params;
 
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: 'Utilisateur introuvable' });
-    }
+		const user = await User.findById(userId);
+		if (!user) {
+			return res.status(404).json({ message: 'Utilisateur introuvable' });
+		}
 
-    const alreadyFavorite = user.favorites.some((id) => id.toString() === strategyId);
+		const alreadyFavorite = user.favorites.some((id) => id.toString() === strategyId);
 
-    if (alreadyFavorite) {
-      user.favorites = user.favorites.filter((id) => id.toString() !== strategyId);
-    } else {
-      user.favorites.push(strategyId);
-    }
+		if (alreadyFavorite) {
+			user.favorites = user.favorites.filter((id) => id.toString() !== strategyId);
+		} else {
+			user.favorites.push(strategyId);
+		}
 
-    await user.save();
+		await user.save();
 
-    res.status(200).json({ isFavorite: !alreadyFavorite });
-  } catch (err) {
-    next(err);
-  }
+		res.status(200).json({ isFavorite: !alreadyFavorite });
+	} catch (err) {
+		next(err);
+	}
 });
 
 module.exports = router;
