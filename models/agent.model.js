@@ -30,4 +30,6 @@ agentSchema.virtual('agentObject', {
   foreignField: 'agent',
 });
 
-module.exports = mongoose.model('Agent', agentSchema);
+const Agent = mongoose.model('Agent', agentSchema);
+
+module.exports = Agent;

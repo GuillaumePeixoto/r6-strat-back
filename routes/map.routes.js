@@ -10,7 +10,26 @@ const Strategy = require('./../models/strategy.model.js');
 router.get('/maps', verifyToken, async (req, res, next) => {
 
     try {
-        const response = await Map.find().lean();
+        const response = await Map.aggregate([
+            {
+                $lookup: {
+                    from: 'strategies',  // le nom de la collection MongoDB (généralement le pluriel en minuscule du nom du modèle)
+                    localField: '_id',   // le champ de Map à comparer
+                    foreignField: 'map', // le champ de Strategy qui référence la map
+                    as: 'strategies',    // le nom temporaire du tableau résultat
+                },
+            },
+            {
+                $addFields: {
+                    strategiesCount: { $size: '$strategies' }, // compte les éléments du tableau
+                },
+            },
+            {
+                $project: {
+                    strategies: 0, // on retire le tableau complet des stratégies, on ne garde que le compte
+                },
+            },
+        ]);
 
         if (!response) {
             res.sendStatus(204);

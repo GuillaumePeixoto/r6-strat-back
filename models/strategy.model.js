@@ -27,4 +27,5 @@ const strategySchema = new mongoose.Schema({
   },
 }, { timestamps: true });
 
-module.exports = mongoose.model('Strategy', strategySchema);
+const Strategy = mongoose.model('Strategy', strategySchema);
+module.exports = Strategy;

@@ -14,6 +14,12 @@ const userSchema = new mongoose.Schema({
     type: [String],
     default: ['ROLE_USER'],
   },
+  favorites: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Strategy',
+    },
+  ],
 }, { timestamps: true });
 
 const User = mongoose.model('User', userSchema);
