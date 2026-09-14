@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const authRouter = require('./routes/auth.routes');
 const userRouter = require('./routes/user.routes');
 const mapRouter = require('./routes/map.routes');
 const agentRouter = require('./routes/agent.routes');
@@ -24,7 +25,8 @@ app.get('/', (req, res) => {
   res.send('API en ligne');
 });
 
-app.use('/api/auth', userRouter);
+app.use('/api/auth', authRouter);
+app.use('/api', userRouter);
 app.use('/api', mapRouter);
 app.use('/api', agentRouter);
 app.use('/api', strategyRouter);

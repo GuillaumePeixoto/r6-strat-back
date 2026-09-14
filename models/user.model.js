@@ -14,6 +14,9 @@ const userSchema = new mongoose.Schema({
     type: [String],
     default: ['ROLE_USER'],
   },
+  image: {
+    type: String
+  },
   favorites: [
     {
       type: mongoose.Schema.Types.ObjectId,
