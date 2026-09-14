@@ -54,7 +54,7 @@ router.get('/strategies', verifyToken, async (req, res, next) => {
 				true
 			))
 			.filter((strategy) => {
-				if(!selectedAgents.length) return true;
+				if (!selectedAgents.length) return true;
 
 				const strategyAgentIds = strategy.agents.map((a) => a.id);
 
@@ -84,28 +84,6 @@ router.get('/strategies/:id', verifyToken, async (req, res, next) => {
 	}
 });
 
-router.post('/strategies/:strategyId/favorite', verifyToken, async (req, res, next) => {
-	try {
-		await StrategyUser.findOneAndUpdate(
-			{ strategy: req.params.strategyId, user: req.payload.id },
-			{ strategy: req.params.strategyId, user: req.payload.id },
-			{ upsert: true, new: true },
-		);
-		res.sendStatus(204);
-	} catch (err) {
-		next(err);
-	}
-});
-
-router.delete('/strategies/:strategyId/favorite', verifyToken, async (req, res, next) => {
-	try {
-		await StrategyUser.deleteOne({ strategy: req.params.strategyId, user: req.payload.id });
-		res.sendStatus(204);
-	} catch (err) {
-		next(err);
-	}
-});
-
 // onst url = editMode ? `api/save-strategy/${editId}` : "/save-strategy";
 router.post('/save-strategy', verifyToken, async (req, res, next) => {
 	try {
@@ -117,7 +95,7 @@ router.post('/save-strategy', verifyToken, async (req, res, next) => {
 				"agents": agents
 			},
 			map: map_id,
-			user: req.payload._id,
+			user: req.payload.id,
 			bombSiteLocation: bombsite
 		});
 		res.status(201).json(newStrategy);
@@ -148,6 +126,28 @@ router.put('/strategies/:id', verifyToken, async (req, res, next) => {
 		next(err);
 	}
 
+});
+
+router.delete('/strategies/:id', verifyToken, async (req, res, next) => {
+	try {
+		const strategyId = req.params.id;
+
+		const deletedStrategy = await Strategy.findByIdAndDelete(strategyId);
+
+		if (!deletedStrategy) {
+			return res.status(404).json({ message: 'Stratégie introuvable' });
+		}
+
+		// Update Favorite 
+		await User.updateMany(
+			{ favorites: strategyId },
+			{ $pull: { favorites: strategyId } }
+		);
+
+		res.status(200).json({ message: 'Stratégie supprimée et retirée des favoris avec succès' });
+	} catch (err) {
+		next(err);
+	}
 });
 
 router.patch('/favorites/:strategyId', verifyToken, async (req, res, next) => {
