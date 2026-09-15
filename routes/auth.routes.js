@@ -62,14 +62,28 @@ router.post('/login', async (req, res, next) => {
 
         const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "4h" });
 
-        res.status(200).json({ message: "Logged in successfully", token, payload });
+        res.status(200).json({ message: "Logged in successfully", token, payload, profilImage: foundUser.image });
     } catch (err) {
         next(err);
     }
 });
 
-router.get("/verify", verifyToken, (req, res, next) => {
-    res.status(200).json({ message: "Token is valid", payload: req.payload });
+router.get("/verify", verifyToken, async (req, res, next) => {
+    try {
+        const user = await User.findById(req.payload.id).select('username image').lean();
+
+        if (!user) {
+            return res.status(404).json({ message: "Utilisateur introuvable" });
+        }
+
+        res.status(200).json({
+            message: "Token is valid",
+            payload: req.payload,
+            image: user.image,
+        });
+    } catch (err) {
+        next(err);
+    }
 });
 
 

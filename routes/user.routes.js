@@ -73,8 +73,8 @@ router.get('/profile', verifyToken, async (req, res, next) => {
             bombsite_id: strategy.bombSiteLocation?._id,
             is_favorite_for_me: favoriteIds.has(String(strategy._id)),
             agents: (strategy.infosStrategy?.agents || [])
-                .map((a) => { 
-                    let agentStrat = agentsData.find((agent) => a.id_agent == agent._id.toString()) 
+                .map((a) => {
+                    let agentStrat = agentsData.find((agent) => a.id_agent == agent._id.toString())
                     return { id: String(agentStrat._id), name: agentStrat.name, icon: agentStrat.iconAgent }
                 })
         });
@@ -82,7 +82,7 @@ router.get('/profile', verifyToken, async (req, res, next) => {
         const ownStrategies = ownStrats.map(formatStrategy);
         const favoriteStrategies = favoriteStrats.map(formatStrategy);
 
-        res.status(200).json({ username, image: favoritesList.image , ownStrategies: ownStrategies, ownStratsTotal, favoriteStrategies: favoriteStrategies, favoriteStrategiesTotal: favoritesList.favorites.length });
+        res.status(200).json({ username, image: favoritesList.image, ownStrategies: ownStrategies, ownStratsTotal, favoriteStrategies: favoriteStrategies, favoriteStrategiesTotal: favoritesList.favorites.length });
     } catch (err) {
         next(err);
     }
@@ -93,14 +93,22 @@ router.get('/profile', verifyToken, async (req, res, next) => {
 });
 
 router.put('/change-profil-image', verifyToken, async (req, res, next) => {
-    const {link} = req.body;
+    const { profilImage } = req.body;
 
-    try{
-        await User.findOneAndUpdate({
-            image: link
-        }, req.payload.id);
-        res.status(200).json({image: link});
-    }catch(err){
+    if (!profilImage) {
+        return res.status(400).json({ message: "profilImage manquant" });
+    }
+
+
+    try {
+        const updatedUser = await User.findByIdAndUpdate(req.payload.id, { image: profilImage });
+
+        if (!updatedUser) {
+            return res.status(404).json({ message: "Utilisateur introuvable" });
+        }
+
+        res.status(200).json({ message: "Image updated" });
+    } catch (err) {
         next(err);
     }
 })
