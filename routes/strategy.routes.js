@@ -75,6 +75,7 @@ router.get('/strategies/:id', verifyToken, async (req, res, next) => {
 		const strategy = await Strategy.findById(req.params.id)
 			.populate('map')
 			.populate('bombSiteLocation')
+			.populate('user', 'username')
 			.lean();
 
 		if (!strategy) return res.status(404).json({ errorMessage: 'STRATEGY_NOT_FOUND' });
@@ -107,8 +108,8 @@ router.post('/save-strategy', verifyToken, async (req, res, next) => {
 router.put('/strategies/:id', verifyToken, async (req, res, next) => {
 	try {
 		const { title, map_id, bombsite, walls, agents } = req.body
-		const updated = await Strategy.findByIdAndUpdate(
-			req.params.id,
+		const updated = await Strategy.findOneAndUpdate(
+			{ _id: req.params.id, user: req.payload.id },
 			{
 				title,
 				infosStrategy: {
@@ -116,11 +117,13 @@ router.put('/strategies/:id', verifyToken, async (req, res, next) => {
 					"agents": agents
 				},
 				map: map_id,
-				user: req.payload._id,
 				bombSiteLocation: bombsite
 			},
 			{ new: true }
 		);
+		if (!updated) {
+			return res.status(404).json({ message: 'Stratégie introuvable' });
+		}
 		res.json(updated);
 	} catch (err) {
 		next(err);
@@ -132,7 +135,10 @@ router.delete('/strategies/:id', verifyToken, async (req, res, next) => {
 	try {
 		const strategyId = req.params.id;
 
-		const deletedStrategy = await Strategy.findByIdAndDelete(strategyId);
+		const deletedStrategy = await Strategy.findOneAndDelete({
+			_id: strategyId,
+			user: req.payload.id,
+		});
 
 		if (!deletedStrategy) {
 			return res.status(404).json({ message: 'Stratégie introuvable' });
