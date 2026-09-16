@@ -118,8 +118,7 @@ router.put('/strategies/:id', verifyToken, async (req, res, next) => {
 				},
 				map: map_id,
 				bombSiteLocation: bombsite
-			},
-			{ new: true }
+			}
 		);
 		if (!updated) {
 			return res.status(404).json({ message: 'Stratégie introuvable' });
